@@ -8,7 +8,8 @@
   :pathname "src"
   :components ((:file "package")
                (:file "conditions")
-               (:file "protocol"))
+               (:file "protocol")
+               (:file "serdes"))
   :in-order-to ((test-op (test-op "protobuf-protocol/tests"))))
 
 (defsystem "protobuf-protocol/tests"
