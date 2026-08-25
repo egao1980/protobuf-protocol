@@ -26,7 +26,7 @@ shell out to protoc — schema compile stays in the backend / `cl-protobufs.asdf
 sbcl --load scripts/roundtrip.lisp
 ```
 
-CI: `setup-client` + `setup-roswell` + `scripts/ci-install.lisp` / `ci-test.lisp` (OCI only, no Quicklisp).
+CI: canned [`cl-repository`](https://github.com/egao1980/cl-repository) (`test-system.yml` / `setup-client` + `ci`). Deps from `ghcr.io/egao1980/cl-systems`.
 
 ## License
 
