@@ -1,6 +1,6 @@
 (defsystem "protobuf-protocol"
-  :version "0.1.0"
-  :description "CLOS protobuf / serdes :protobuf protocol for cl-stack"
+  :version "0.2.0"
+  :description "CLOS protobuf / serdes :protobuf and :wkt protocol for cl-stack"
   :author "egao1980"
   :license "MIT"
   :depends-on ("serdes-protocol")

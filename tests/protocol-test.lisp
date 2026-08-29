@@ -66,7 +66,15 @@
                  (protobuf-protocol:load-schema "ping.lisp"))))))
 
 (deftest serdes-register
-  (ok (serdes-protocol:find-backend :protobuf)))
+  (ok (serdes-protocol:find-backend :protobuf))
+  (ok (serdes-protocol:find-backend :wkt)))
+
+(deftest wkt-without-backend-signals
+  (let ((protobuf-protocol:*protobuf-backend* nil))
+    (ok (signals (protobuf-protocol:lisp-to-wkt (make-hash-table))
+                 'protobuf-protocol:protobuf-error))
+    (ok (signals (protobuf-protocol:encode-wkt "x")
+                 'protobuf-protocol:protobuf-error))))
 
 (deftest serdes-roundtrip
   (with-mock

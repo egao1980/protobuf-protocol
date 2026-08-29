@@ -104,4 +104,70 @@
     (serdes-protocol:register-format :protobuf backend)
     backend))
 
+;;; :wkt — JSON document as google.protobuf.Value. Same length-prefixed
+;;; framing as :protobuf; the payload is always a Value, so decode does not
+;;; need *protobuf-message-class*.
+
+(defclass wkt-serdes-backend (protobuf-serdes-backend) ())
+
+(defclass wkt-binary-input-stream (protobuf-binary-input-stream) ())
+
+(defclass wkt-binary-output-stream (protobuf-binary-output-stream) ())
+
+(defun make-wkt-serdes-backend ()
+  (make-instance 'wkt-serdes-backend))
+
+(defmethod serdes-protocol:backend-encode ((backend wkt-serdes-backend) value &key stream)
+  (declare (ignore backend))
+  (encode-wkt value :stream stream))
+
+(defmethod serdes-protocol:backend-decode ((backend wkt-serdes-backend) source &key)
+  (declare (ignore backend))
+  (decode-wkt (%coerce-octets (%payload-for-decode source))))
+
+(defmethod serdes-protocol:backend-make-input-stream ((backend wkt-serdes-backend)
+                                                      underlying
+                                                      &key (element-type '(unsigned-byte 8)))
+  (unless (equal element-type '(unsigned-byte 8))
+    (error 'protobuf-error
+           :message (format nil "wkt streams are binary, got ~S" element-type)))
+  (make-instance 'wkt-binary-input-stream
+                 :underlying underlying
+                 :backend backend))
+
+(defmethod serdes-protocol:backend-make-output-stream ((backend wkt-serdes-backend)
+                                                       underlying
+                                                       &key (element-type '(unsigned-byte 8)))
+  (unless (equal element-type '(unsigned-byte 8))
+    (error 'protobuf-error
+           :message (format nil "wkt streams are binary, got ~S" element-type)))
+  (make-instance 'wkt-binary-output-stream
+                 :underlying underlying
+                 :backend backend))
+
+(defmethod serdes-protocol:stream-encode-value ((stream wkt-binary-output-stream) value &key)
+  (let* ((octets (encode-wkt value))
+         (out (serdes-protocol:underlying-stream stream)))
+    (%write-u32be out (length octets))
+    (write-sequence octets out)
+    value))
+
+(defmethod serdes-protocol:stream-decode-value ((stream wkt-binary-input-stream) &key)
+  (let* ((in (serdes-protocol:underlying-stream stream))
+         (len (%read-u32be in)))
+    (when (eq len :eof)
+      (return-from serdes-protocol:stream-decode-value :eof))
+    (let ((buf (make-array len :element-type '(unsigned-byte 8))))
+      (let ((n (read-sequence buf in)))
+        (unless (= n len)
+          (error 'protobuf-decode-error :message "truncated length-delimited message")))
+      (decode-wkt buf))))
+
+(defun use-wkt-serdes-backend ()
+  "Register :wkt with serdes-protocol. Does not change *SERDES-FORMAT*."
+  (let ((backend (make-wkt-serdes-backend)))
+    (serdes-protocol:register-format :wkt backend)
+    backend))
+
 (use-protobuf-serdes-backend)
+(use-wkt-serdes-backend)
