@@ -1,6 +1,6 @@
 # protobuf-protocol
 
-CLOS protobuf / serdes `:protobuf` protocol for cl-stack.
+CLOS protobuf / serdes `:protobuf` and `:wkt` protocol for cl-stack.
 
 Part of [cl-stack](https://github.com/egao1980/cl-stack) agent-wire
 ([brief](https://github.com/egao1980/cl-stack/blob/main/docs/capabilities/protobuf.md)).
@@ -18,6 +18,12 @@ Values are backend proto messages (cl-protobufs classes). Octets first.
   (serdes-protocol:encode message :format :protobuf)
   (serdes-protocol:decode octets :format :protobuf))
 ```
+
+JSON-shaped Lisp (hash-tables, vectors, strings, numbers, `:null`) is
+`google.protobuf.Value` via `lisp-to-wkt` / `wkt-to-lisp`. serdes `:wkt`
+encodes that Value; stream encode is the same big-endian uint32 length
+prefix as `:protobuf`. Decode of `:wkt` does not need
+`*protobuf-message-class*`.
 
 `load-schema` takes a generated `.lisp` or ASDF system name. It does **not**
 shell out to protoc — schema compile stays in the backend / `cl-protobufs.asdf`.

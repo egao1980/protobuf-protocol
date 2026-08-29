@@ -64,3 +64,47 @@
 (defun load-schema (source &key (backend *protobuf-backend*))
   "Load a compiled schema. SOURCE = generated .lisp pathname or ASDF system name."
   (backend-load-schema (%ensure-backend backend) source))
+
+;;; JSON-shaped Lisp ↔ google.protobuf.Value. The protocol owns the GF; the
+;;; backend that has the WKT classes implements it. Decode of :wkt never needs
+;;; *protobuf-message-class* — the class is always Value.
+
+(defgeneric backend-wkt-value-class (backend)
+  (:documentation "Lisp class of google.protobuf.Value for BACKEND.")
+  (:method ((backend protobuf-backend))
+    (declare (ignore backend))
+    (error 'protobuf-error
+           :message "backend does not implement WKT Value")))
+
+(defgeneric backend-lisp-to-wkt (backend value)
+  (:documentation "JSON-shaped Lisp VALUE → a WKT Value message.")
+  (:method ((backend protobuf-backend) value)
+    (declare (ignore value))
+    (error 'protobuf-encode-error
+           :message "backend-lisp-to-wkt not implemented")))
+
+(defgeneric backend-wkt-to-lisp (backend message)
+  (:documentation "WKT Value MESSAGE → JSON-shaped Lisp.")
+  (:method ((backend protobuf-backend) message)
+    (declare (ignore message))
+    (error 'protobuf-decode-error
+           :message "backend-wkt-to-lisp not implemented")))
+
+(defun lisp-to-wkt (value &key (backend *protobuf-backend*))
+  "JSON-shaped Lisp → WKT Value message."
+  (backend-lisp-to-wkt (%ensure-backend backend) value))
+
+(defun wkt-to-lisp (message &key (backend *protobuf-backend*))
+  "WKT Value message → JSON-shaped Lisp."
+  (backend-wkt-to-lisp (%ensure-backend backend) message))
+
+(defun encode-wkt (value &key stream (backend *protobuf-backend*))
+  "JSON-shaped Lisp → protobuf octets of a WKT Value (or write STREAM)."
+  (encode-message (lisp-to-wkt value :backend backend)
+                  :stream stream :backend backend))
+
+(defun decode-wkt (source &key (backend *protobuf-backend*))
+  "Protobuf octets (or stream) of a WKT Value → JSON-shaped Lisp."
+  (let ((b (%ensure-backend backend)))
+    (wkt-to-lisp (decode-message source (backend-wkt-value-class b) :backend b)
+                 :backend b)))
